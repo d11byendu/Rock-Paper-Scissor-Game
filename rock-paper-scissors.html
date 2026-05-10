@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rock Paper Scissors</title>
+  <link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0f0e17;
+      --surface: #1a1825;
+      --card: #221f35;
+      --rock: #ff6b6b;
+      --paper: #4ecdc4;
+      --scissors: #ffe66d;
+      --win: #06d6a0;
+      --lose: #ef476f;
+      --draw: #ffd166;
+      --text: #fffffe;
+      --muted: #a7a9be;
+    }
+
+    html, body { margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Nunito', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px 14px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    @media (min-height: 700px) {
+      body { justify-content: center; }
+    }
+
+    /* Animated background dots */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .glow-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.18;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb1 { width: 400px; height: 400px; background: var(--rock); top: -100px; left: -100px; animation: drift1 12s ease-in-out infinite alternate; }
+    .orb2 { width: 350px; height: 350px; background: var(--paper); bottom: -80px; right: -80px; animation: drift2 14s ease-in-out infinite alternate; }
+
+    @keyframes drift1 { to { transform: translate(60px, 40px); } }
+    @keyframes drift2 { to { transform: translate(-40px, -60px); } }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      align-items: center;
+    }
+
+    /* Header */
+    header { text-align: center; }
+    h1 {
+      font-family: 'Boogaloo', cursive;
+      font-size: clamp(1.6rem, 6vw, 2.4rem);
+      letter-spacing: 2px;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--rock), var(--scissors), var(--paper));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+
+    /* Scoreboard */
+    .scoreboard {
+      display: flex;
+      gap: 12px;
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 10px 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+      width: 100%;
+      justify-content: space-between;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .score-block { text-align: center; flex: 1; }
+    .score-label {
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .score-num {
+      font-family: 'Boogaloo', cursive;
+      font-size: 1.4rem;
+      line-height: 1.1;
+      transition: transform 0.15s, color 0.3s;
+    }
+    .score-num.pop { animation: pop 0.25s ease; }
+    .score-divider { width: 1px; background: rgba(255,255,255,0.08); align-self: stretch; }
+    #score-you { color: var(--paper); }
+    #score-cpu { color: var(--rock); }
+    #score-draw { color: var(--draw); }
+
+    @keyframes pop {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.4); }
+      100% { transform: scale(1); }
+    }
+
+    /* Arena */
+    .arena {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 16px 14px;
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.07);
+      box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sides {
+      display: flex;
+      width: 100%;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .side {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .side-label {
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .choice-display {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      font-size: 1.4rem;
+      background: var(--surface);
+      border: 3px solid rgba(255,255,255,0.08);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+    }
+
+    @media (min-height: 700px) {
+      body { justify-content: center; }
+    }
+
+    .choice-display.reveal {
+      animation: revealChoice 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes revealChoice {
+      0%   { transform: scale(0.5) rotate(-20deg); opacity: 0; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .vs-badge {
+      font-family: 'Boogaloo', cursive;
+      font-size: 1.6rem;
+      color: var(--muted);
+      opacity: 0.5;
+      flex-shrink: 0;
+    }
+
+    /* Result banner */
+    .result-banner {
+      font-family: 'Boogaloo', cursive;
+      font-size: 1.4rem;
+      letter-spacing: 2px;
+      padding: 7px 20px;
+      border-radius: 50px;
+      text-align: center;
+      background: rgba(255,255,255,0.04);
+      border: 2px solid rgba(255,255,255,0.08);
+      color: var(--muted);
+      transition: all 0.3s ease;
+      min-width: 160px;
+    }
+
+    .result-banner.win  { color: var(--win);  border-color: var(--win);  background: rgba(6,214,160,0.1);  }
+    .result-banner.lose { color: var(--lose); border-color: var(--lose); background: rgba(239,71,111,0.1); }
+    .result-banner.draw { color: var(--draw); border-color: var(--draw); background: rgba(255,209,102,0.1); }
+    .result-banner.show { animation: slideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+    @keyframes slideIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    /* Buttons */
+    .choices {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .choice-btn {
+      flex: 1;
+      max-width: 100px;
+      aspect-ratio: 1;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 1.9rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 4px;
+      transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+      position: relative;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    .choice-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.2s;
+      background: rgba(255,255,255,0.12);
+    }
+
+    .choice-btn:hover::before { opacity: 1; }
+    .choice-btn:hover { transform: translateY(-6px) scale(1.04); }
+    .choice-btn:active { transform: translateY(-2px) scale(0.97); }
+
+    .choice-btn span.label {
+      font-size: 0.6rem;
+      font-weight: 900;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .btn-rock     { background: linear-gradient(135deg, #c0392b, #e74c3c); box-shadow: 0 8px 24px rgba(231,76,60,0.4); color: #fff; }
+    .btn-paper    { background: linear-gradient(135deg, #16a085, #4ecdc4); box-shadow: 0 8px 24px rgba(78,205,196,0.4); color: #fff; }
+    .btn-scissors { background: linear-gradient(135deg, #f39c12, #ffe66d); box-shadow: 0 8px 24px rgba(243,156,18,0.4); color: #1a1825; }
+
+    .btn-rock:hover     { box-shadow: 0 12px 36px rgba(231,76,60,0.6); }
+    .btn-paper:hover    { box-shadow: 0 12px 36px rgba(78,205,196,0.6); }
+    .btn-scissors:hover { box-shadow: 0 12px 36px rgba(243,156,18,0.6); }
+
+    /* Reset */
+    .reset-btn {
+      background: transparent;
+      border: 2px solid rgba(255,255,255,0.15);
+      color: var(--muted);
+      font-family: 'Nunito', sans-serif;
+      font-weight: 900;
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 12px 36px;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .reset-btn:hover {
+      border-color: var(--lose);
+      color: var(--lose);
+      background: rgba(239,71,111,0.08);
+      transform: scale(1.04);
+    }
+    .reset-btn:active { transform: scale(0.97); }
+
+    /* Difficulty selector */
+    .difficulty {
+      display: flex;
+      gap: 8px;
+      background: var(--surface);
+      border-radius: 50px;
+      padding: 6px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .diff-btn {
+      border: none;
+      border-radius: 50px;
+      padding: 8px 20px;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 900;
+      font-size: 0.78rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+    .diff-btn:hover { color: var(--text); }
+    .diff-btn.active-easy     { background: var(--win);  color: #0f0e17; }
+    .diff-btn.active-moderate { background: var(--draw); color: #0f0e17; }
+    .diff-btn.active-hard     { background: var(--lose); color: #fff; }
+
+    .diff-hint {
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-align: center;
+      min-height: 1em;
+    }
+
+    /* Difficulty selector */
+    .difficulty {
+      display: flex;
+      gap: 8px;
+      background: var(--surface);
+      border-radius: 50px;
+      padding: 6px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .diff-btn {
+      border: none;
+      border-radius: 50px;
+      padding: 8px 20px;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 900;
+      font-size: 0.78rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+    .diff-btn:hover { color: var(--text); }
+    .diff-btn.active-easy     { background: var(--win);  color: #0f0e17; }
+    .diff-btn.active-moderate { background: var(--draw); color: #0f0e17; }
+    .diff-btn.active-hard     { background: var(--lose); color: #fff; }
+    .diff-hint {
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-align: center;
+    }
+
+    /* CPU thinking animation */
+    @keyframes thinking {
+      0%, 100% { content: '❓'; }
+      33%       { content: '🤔'; }
+      66%       { content: '💭'; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="glow-orb orb1"></div>
+<div class="glow-orb orb2"></div>
+
+<div class="wrapper">
+
+  <header>
+    <h1>Rock Paper Scissors</h1>
+    <p class="subtitle">Choose your weapon</p>
+  </header>
+
+  <!-- Difficulty -->
+  <div style="display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;">
+    <div class="difficulty">
+      <button class="diff-btn active-easy" id="btn-easy"     onclick="setDifficulty('easy')">😌 Easy</button>
+      <button class="diff-btn"             id="btn-moderate" onclick="setDifficulty('moderate')">😤 Moderate</button>
+      <button class="diff-btn"             id="btn-hard"     onclick="setDifficulty('hard')">😈 Hard</button>
+    </div>
+    <p class="diff-hint" id="diff-hint">CPU plays randomly — just have fun!</p>
+  </div>
+
+  <!-- Scoreboard -->
+  <div class="scoreboard">
+    <div class="score-block">
+      <div class="score-label">You</div>
+      <div class="score-num" id="score-you">0</div>
+    </div>
+    <div class="score-divider"></div>
+    <div class="score-block">
+      <div class="score-label">Draws</div>
+      <div class="score-num" id="score-draw">0</div>
+    </div>
+    <div class="score-divider"></div>
+    <div class="score-block">
+      <div class="score-label">CPU</div>
+      <div class="score-num" id="score-cpu">0</div>
+    </div>
+  </div>
+
+  <!-- Arena -->
+  <div class="arena">
+    <div class="sides">
+      <div class="side">
+        <div class="side-label">You</div>
+        <div class="choice-display" id="display-you">🤷</div>
+      </div>
+      <div class="vs-badge">VS</div>
+      <div class="side">
+        <div class="side-label">CPU</div>
+        <div class="choice-display" id="display-cpu">🤷</div>
+      </div>
+    </div>
+
+    <div class="result-banner" id="result-banner">Make your move!</div>
+
+    <div class="choices">
+      <button class="choice-btn btn-rock"     onclick="play('rock')">🪨<span class="label">Rock</span></button>
+      <button class="choice-btn btn-paper"    onclick="play('paper')">📄<span class="label">Paper</span></button>
+      <button class="choice-btn btn-scissors" onclick="play('scissors')">✂️<span class="label">Scissors</span></button>
+    </div>
+  </div>
+
+  <button class="reset-btn" onclick="resetGame()">↺ Reset Score</button>
+
+</div>
+
+<script>
+  const EMOJIS  = { rock: '🪨', paper: '📄', scissors: '✂️' };
+  const CHOICES  = ['rock', 'paper', 'scissors'];
+  const BEATS    = { rock: 'scissors', paper: 'rock', scissors: 'paper' }; // key beats value
+  const LOSES_TO = { rock: 'paper',    paper: 'scissors', scissors: 'rock' }; // key loses to value
+
+  let scores     = { you: 0, cpu: 0, draw: 0 };
+  let isPlaying  = false;
+  let difficulty = 'easy';
+  let history    = []; // tracks user's last moves
+
+  const HINTS = {
+    easy:     'CPU plays randomly — just have fun!',
+    moderate: 'CPU sometimes reads your patterns. Stay unpredictable!',
+    hard:     'CPU predicts your next move. Can you outsmart it? 🧠',
+  };
+
+  function setDifficulty(level) {
+    difficulty = level;
+    history    = [];
+    ['easy','moderate','hard'].forEach(d => {
+      const btn = document.getElementById('btn-' + d);
+      btn.className = 'diff-btn' + (d === level ? ' active-' + d : '');
+    });
+    document.getElementById('diff-hint').textContent = HINTS[level];
+    resetGame();
+  }
+
+  /* ── CPU AI ──────────────────────────────────────────────── */
+  function cpuPick(userChoice) {
+    if (difficulty === 'easy') {
+      // Fully random
+      return CHOICES[Math.floor(Math.random() * 3)];
+    }
+
+    if (difficulty === 'moderate') {
+      // 50% chance to play smart (beat user's last move), else random
+      if (history.length > 0 && Math.random() < 0.5) {
+        const lastUser = history[history.length - 1];
+        return LOSES_TO[lastUser]; // counter what user played last
+      }
+      return CHOICES[Math.floor(Math.random() * 3)];
+    }
+
+    if (difficulty === 'hard') {
+      // Find user's most frequent move and counter it
+      // Also 20% random so it's not impossible
+      if (history.length >= 2 && Math.random() < 0.8) {
+        const freq = { rock: 0, paper: 0, scissors: 0 };
+        history.forEach(m => freq[m]++);
+        const predicted = Object.keys(freq).reduce((a, b) => freq[a] >= freq[b] ? a : b);
+        return LOSES_TO[predicted]; // play what beats the predicted move
+      }
+      return CHOICES[Math.floor(Math.random() * 3)];
+    }
+  }
+
+  /* ── Game logic ──────────────────────────────────────────── */
+  function getResult(you, cpu) {
+    if (you === cpu) return 'draw';
+    if (BEATS[you] === cpu) return 'win';
+    return 'lose';
+  }
+
+  function animatePop(el) {
+    el.classList.remove('pop');
+    void el.offsetWidth;
+    el.classList.add('pop');
+  }
+
+  function play(userChoice) {
+    if (isPlaying) return;
+    isPlaying = true;
+
+    history.push(userChoice);
+    if (history.length > 10) history.shift(); // keep last 10
+
+    const cpuChoice = cpuPick(userChoice);
+    const result    = getResult(userChoice, cpuChoice);
+
+    const displayYou = document.getElementById('display-you');
+    const displayCpu = document.getElementById('display-cpu');
+    const banner     = document.getElementById('result-banner');
+
+    displayYou.textContent = EMOJIS[userChoice];
+    displayYou.classList.remove('reveal');
+    void displayYou.offsetWidth;
+    displayYou.classList.add('reveal');
+
+    displayCpu.textContent = '🤔';
+    banner.textContent     = 'CPU is thinking…';
+    banner.className       = 'result-banner';
+
+    setTimeout(() => {
+      displayCpu.textContent = EMOJIS[cpuChoice];
+      displayCpu.classList.remove('reveal');
+      void displayCpu.offsetWidth;
+      displayCpu.classList.add('reveal');
+
+      scores[result === 'win' ? 'you' : result === 'lose' ? 'cpu' : 'draw']++;
+      updateScoreboard(result);
+
+      const msgs = {
+        win:  '🎉 You Win!',
+        lose: '💀 You Lose!',
+        draw: '🤝 Draw!',
+      };
+      banner.textContent = msgs[result];
+      banner.className   = `result-banner ${result} show`;
+
+      isPlaying = false;
+    }, 700);
+  }
+
+  function updateScoreboard(changedKey) {
+    const map  = { win: 'you', lose: 'cpu', draw: 'draw' };
+    const key  = map[changedKey];
+    const elId = { you: 'score-you', cpu: 'score-cpu', draw: 'score-draw' }[key];
+    const el   = document.getElementById(elId);
+    el.textContent = scores[key];
+    animatePop(el);
+  }
+
+  function resetGame() {
+    if (isPlaying) return;
+    scores  = { you: 0, cpu: 0, draw: 0 };
+    history = [];
+    ['score-you', 'score-cpu', 'score-draw'].forEach(id => {
+      document.getElementById(id).textContent = '0';
+    });
+    document.getElementById('display-you').textContent = '🤷';
+    document.getElementById('display-cpu').textContent = '🤷';
+    const banner = document.getElementById('result-banner');
+    banner.textContent = 'Make your move!';
+    banner.className   = 'result-banner';
+  }
+</script>
+</body>
+</html>
